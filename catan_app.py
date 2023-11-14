@@ -127,59 +127,72 @@ for resource, path in image_paths.items():
 
 def is_valid_board(board):
     """
-    Validates the board configuration to ensure it adheres to the rule that no two '6' tiles or
-    two '8' tiles, or a '6' and an '8' tile, are adjacent to each other.
-
-    This function iterates through each tile on the board and, for tiles with a '6' or '8', examines
-    the surrounding tiles to check for violations of the adjacency rule. The neighborhood to check
-    is determined based on the position of the tile, as the board has a hexagonal layout which 
-    affects how tiles are considered adjacent.
+    Validates the board configuration for a game which follows the rule that tiles numbered '6' or '8' 
+    must not be adjacent to each other on a hexagonal grid. This function iterates through each tile in a 2D list 
+    representing the game board and checks the six surrounding tiles for any '6' or '8' tiles, 
+    considering the offset nature of the hexagonal grid rows.
 
     Parameters:
-    - board (list of lists of str): A 2D list representing the game board, where each string contains
-      the resource type followed by a hyphen and the number of the tile.
+    - board (list of lists of str): A 2D list representing the game board, where each inner list is a row 
+      of tiles on the board, and each tile is represented by a string with the format "resource-number".
 
     Returns:
-    - bool: True if the board is valid (no adjacent '6' or '8' tiles), False otherwise.
+    - bool: True if the board configuration is valid, meaning no '6' or '8' tiles are adjacent; 
+      False otherwise.
     """
+
+    # Initialize is_valid to True
+    is_valid = True
 
     # Go through each cell in the 2D board list.
     for i in range(len(board)):
         for j in range(len(board[i])):
             current_tile = board[i][j]
+
+            # Check if current tile is either 6 or 8
             if '-6' in current_tile or '-8' in current_tile:
-                # Determine neighbors based on column (even or odd)
-                if j % 2 == 0:  # Even column
-                    neighbors = [(0, 1), (1, 0), (0, -1), (-1, 0), (-1, 1), (1, 1)]
-                else:  # Odd column
-                    neighbors = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, -1), (-1, -1)]
+                # Define neighbors based on column (even or odd)
+                neighbors = [
+                    (-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)
+                ] if j % 2 == 0 else [
+                    (-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)
+                ]
 
                 # Check all neighboring tiles
                 for x, y in neighbors:
-                    # Check bounds
-                    if 0 <= i + x < len(board) and 0 <= j + y < len(board[i]):
-                        neighboring_tile = board[i + x][j + y]
+                    new_i, new_j = i + x, j + y
+
+                    # Ensure new indices are within the board boundaries
+                    if 0 <= new_i < len(board) and 0 <= new_j < len(board[new_i]):
+                        neighboring_tile = board[new_i][new_j]
+
+                        # Check if neighboring tile has a number (6 or 8)
                         if '-6' in neighboring_tile or '-8' in neighboring_tile:
-                            return False
-    return True
+                            is_valid = False
+                            return is_valid  # Invalid adjacency found, return immediately
+
+    # If no invalid adjacencies are found, the board is valid
+    return is_valid
 
 def generate_and_draw_new_board():
     """
     Generates a new Catan board and draws it on a canvas.
 
-    This function loops indefinitely until a valid board is generated according to the rules 
-    It clears the previous drawing on the canvas, generates a new random board configuration, draws it, and checks for validity. 
+    This function loops indefinitely until a valid board is generated according to the rules.
+    It clears the previous drawing on the canvas, generates a new random board configuration, draws it, and checks for validity.
     If the board is valid, it exits the loop, leaving the valid board displayed on the canvas.
-
     """
     while True:         
-        canvas.delete("all") # Clear the canvas of any previous drawings or elements.
-        board_words, ports, colors = new_board() # Call the function `new_board()` to generate a new board layout
-        draw_board_gui(board_words, ports, colors) # Call the function `draw_board_gui(board_words)` to draw the new board
+        canvas.delete("all")  # Clear the canvas of any previous drawings or elements.
+        board_words, ports, colors = new_board()  # Generate a new board layout
 
-        # Check if the newly generated board is valid by calling `is_valid_board(board_words)`,
+        # Check if the newly generated board is valid
         if is_valid_board(board_words):
-            break # If the board is valid, break out of the loop to stop generating new boards.
+            print("Valid board generated.")
+            break  # Exit the loop if the board is valid
+
+    draw_board_gui(board_words, ports, colors)  # Draw the new board
+    print(f'Valid Board {board_words}')
 
 def draw_board_gui(board, ports, colors):
     """
